@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -25,7 +25,12 @@
 *}
 {* Report form criteria section *}
 {if $colGroups}
-  <div id="report-tab-col-groups" class="civireport-criteria">
+  <div id="col-groups" class="civireport-criteria" >
+    {if $componentName eq 'Grant'}
+      <h3>{ts}Include these Statistics{/ts}</h3>
+    {else}
+      <h3>Display Columns</h3>
+    {/if}
     {foreach from=$colGroups item=grpFields key=dnc}
       {assign  var="count" value="0"}
       {* Wrap custom field sets in collapsed accordion pane. *}
@@ -59,17 +64,19 @@
 {/if}
 
 {if $groupByElements}
-  <div id="report-tab-group-by-elements" class="civireport-criteria">
+  <div id="group-by-elements" class="civireport-criteria" >
+    <h3>Group by Columns</h3>
     {assign  var="count" value="0"}
     <table class="report-layout">
       <tr class="crm-report crm-report-criteria-groupby">
         {foreach from=$groupByElements item=gbElem key=dnc}
         {assign var="count" value=`$count+1`}
-        <td width="25%" {if $form.fields.$gbElem}"{/if}>
-        {$form.group_bys[$gbElem].html}
-        {if $form.group_bys_freq[$gbElem].html}:<br>
-          &nbsp;&nbsp;{$form.group_bys_freq[$gbElem].label}&nbsp;{$form.group_bys_freq[$gbElem].html}
-        {/if}
+        <td width="25%" {if $form.fields.$gbElem} onClick="selectGroupByFields('{$gbElem}');"{/if}>
+          {$form.group_bys[$gbElem].html}
+          {if $form.group_bys_freq[$gbElem].html}:
+            <br>
+            &nbsp;&nbsp;{$form.group_bys_freq[$gbElem].label}&nbsp;{$form.group_bys_freq[$gbElem].html}
+          {/if}
         </td>
         {if $count is div by 4}
       </tr><tr class="crm-report crm-report-criteria-groupby">
@@ -135,14 +142,15 @@
 {/if}
 
 {if $orderByOptions}
-  <div id="report-tab-order-by-elements" class="civireport-criteria">
+  <div id="order-by-elements" class="civireport-criteria" >
+    <h3>Order by Columns</h3>
+
     <table id="optionField">
       <tr>
         <th>&nbsp;</th>
-        <th> {ts}Column{/ts}</th>
-        <th> {ts}Order{/ts}</th>
-        <th> {ts}Section Header / Group By{/ts}</th>
-        <th> {ts}Page Break{/ts}</th>
+        <th> Column</th>
+        <th> Order</th>
+        <th> Section Header / Group By</th>
       </tr>
 
       {section name=rowLoop start=1 loop=6}
@@ -150,18 +158,21 @@
         <tr id="optionField_{$index}" class="form-item {cycle values="odd-row,even-row"}">
           <td>
             {if $index GT 1}
-              <a onclick="hideRow({$index}); return false;" name="orderBy_{$index}" href="#" class="form-link"><img src="{$config->resourceBase}i/TreeMinus.gif" class="action-icon" alt="{ts}hide field or section{/ts}"/></a>
+              <a onclick="hideRow({$index});" name="orderBy_{$index}" href="javascript:void(0)" class="form-link"><img
+                        src="{$config->resourceBase}i/TreeMinus.gif" class="action-icon"
+                        alt="{ts}hide field or section{/ts}"/></a>
             {/if}
           </td>
           <td> {$form.order_bys.$index.column.html}</td>
           <td> {$form.order_bys.$index.order.html}</td>
           <td> {$form.order_bys.$index.section.html}</td>
-          <td> {$form.order_bys.$index.pageBreak.html}</td>
         </tr>
       {/section}
     </table>
     <div id="optionFieldLink" class="add-remove-link">
-      <a onclick="showHideRow(); return false;" name="optionFieldLink" href="#" class="form-link"><img src="{$config->resourceBase}i/TreePlus.gif" class="action-icon" alt="{ts}show field or section{/ts}"/>{ts}another column{/ts}</a>
+      <a onclick="showHideRow();" name="optionFieldLink" href="javascript:void(0)" class="form-link"><img
+                src="{$config->resourceBase}i/TreePlus.gif" class="action-icon"
+                alt="{ts}show field or section{/ts}"/>{ts}another column{/ts}</a>
     </div>
     <script type="text/javascript">
       var showRows   = new Array({$showBlocks});
@@ -176,26 +187,14 @@
       }
 
       // hide and display the appropriate blocks as directed by the php code
-      on_load_init_blocks( showRows, hideBlocks, '');
-
-      cj('input[id^="order_by_section_"]').click(disPageBreak).each(disPageBreak);
-
-      function disPageBreak() {
-        if (!cj(this).prop('checked')) {
-          cj(this).parent('td').next('td').children('input[id^="order_by_pagebreak_"]').prop({checked: false, disabled: true});
-        }
-        else {
-          cj(this).parent('td').next('td').children('input[id^="order_by_pagebreak_"]').prop({disabled: false});
-        }
-      }
+      on_load_init_blocks( showRows, hideBlocks, '' );
 
       function hideRow(i) {
         showHideRow(i);
         // clear values on hidden field, so they're not saved
         cj('select#order_by_column_'+ i).val('');
         cj('select#order_by_order_'+ i).val('ASC');
-        cj('input#order_by_section_'+ i).prop('checked', false);
-        cj('input#order_by_pagebreak_'+ i).prop('checked', false);
+        cj('input#order_by_section_'+ i).attr('checked', false);
       }
 
       {/literal}
@@ -203,20 +202,15 @@
   </div>
 {/if}
 
-{if $otherOptions}
-  <div id="report-tab-other-options" class="civireport-criteria">
+{if $form.options.html || $form.options.html}
+  <div id="other-options" class="civireport-criteria" >
+    <h3>Other Options</h3>
     <table class="report-layout">
       {assign var="optionCount" value=0}
-      <tr class="crm-report crm-report-criteria-field">
-        {foreach from=$otherOptions item=optionField key=optionName}
-        {assign var="optionCount" value=`$optionCount+1`}
-        <td>{if $form.$optionName.label}{$form.$optionName.label}&nbsp;{/if}{$form.$optionName.html}</td>
-        {if $optionCount is div by 2}
-      </tr><tr class="crm-report crm-report-criteria-field">
-        {/if}
-        {/foreach}
-        {if $optionCount is not div by 2}
-          <td colspan="2 - ($count % 2)"></td>
+      <tr class="crm-report crm-report-criteria-groupby">
+        <td>{$form.options.html}</td>
+        {if $form.blank_column_end}
+          <td>{$form.blank_column_end.label}&nbsp;&nbsp;{$form.blank_column_end.html}</td>
         {/if}
       </tr>
     </table>
@@ -224,7 +218,8 @@
 {/if}
 
 {if $filters}
-<div id="report-tab-set-filters" class="civireport-criteria">
+<div id="set-filters" class="civireport-criteria" >
+  <h3>Set Filters</h3>
   <table class="report-layout">
     {assign var="counter" value=1}
     {foreach from=$filters     item=table key=tableName}
@@ -269,7 +264,8 @@
               <td class="report-contents">{$form.$fieldOp.html}</td>
               <td>
                 <span id="{$filterVal}_cell">{$form.$filterVal.label}&nbsp;{$form.$filterVal.html}</span>
-                <span id="{$filterMin}_max_cell">{$form.$filterMin.label}&nbsp;{$form.$filterMin.html}&nbsp;&nbsp;{$form.$filterMax.label}&nbsp;{$form.$filterMax.html}</span>
+                <span id="{$filterMin}_max_cell">{$form.$filterMin.label}&nbsp;{$form.$filterMin.html}
+                  &nbsp;&nbsp;{$form.$filterMax.label}&nbsp;{$form.$filterMax.html}</span>
               </td>
             </tr>
           {/if}
@@ -285,22 +281,25 @@
 
             {/foreach}
             {if $closed eq 0 }</table>{/if}
-        </div>
-    {/if}
+  </div>
+  {/if}
 
-    {literal}
+  {literal}
   <script type="text/javascript">
-        {/literal}
-            {foreach from=$filters item=table key=tableName}
-                {foreach from=$table item=field key=fieldName}
-        {literal}var val = "dnc";{/literal}
-                {assign var=fieldOp     value=$fieldName|cat:"_op"}
-                {if !($field.operatorType & 4) && !$field.no_display && $form.$fieldOp.html}
-                    {literal}var val = document.getElementById("{/literal}{$fieldOp}{literal}").value;{/literal}
-    {/if}
-                {literal}showHideMaxMinVal( "{/literal}{$fieldName}{literal}", val );{/literal}
+            {/literal}
+                {foreach from=$filters item=table key=tableName}
+                    {foreach from=$table item=field key=fieldName}
+            {literal}var val = "dnc";
+            {/literal}
+                            {assign var=fieldOp     value=$fieldName|cat:"_op"}
+                            {if !($field.operatorType & 4) && !$field.no_display && $form.$fieldOp.html}
+                                {literal}var val = document.getElementById("{/literal}{$fieldOp}{literal}").value;
+    {/literal}
+        {/if}
+                    {literal}showHideMaxMinVal("{/literal}{$fieldName}{literal}", val);
+    {/literal}
+                {/foreach}
             {/foreach}
-        {/foreach}
 
         {literal}
     function showHideMaxMinVal( field, val ) {
@@ -319,16 +318,17 @@
       }
     }
 
-    CRM.$(function($) {
-      $('.crm-report-criteria-groupby input:checkbox').click(function() {
-        $('#fields_' + this.id.substr(10)).prop('checked', this.checked);
-      });
-      {/literal}{if $displayToggleGroupByFields}{literal}
-      $('.crm-report-criteria-field input:checkbox').click(function() {
-        $('#group_bys_' + this.id.substr(7)).prop('checked', this.checked);
-      });
-      {/literal}{/if}{literal}
-    });
+    function selectGroupByFields(id) {
+      var field = 'fields\[' + id + '\]';
+      var group = 'group_bys\[' + id + '\]';
+      var groups = document.getElementById(group).checked;
+      if (groups == 1) {
+        document.getElementById(field).checked = true;
+      } else {
+        document.getElementById(field).checked = false;
+      }
+    }
   </script>
 {/literal}
 
+<div>{$form.buttons.html}</div>
